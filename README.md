@@ -28,14 +28,15 @@ Without a GPU it still runs: the agent widens the chunk size and, if needed, fal
 
 ## 2. Install (one time)
 
-### macOS
-```bash
-cd mimicry
-bash scripts/install.sh        # creates .venv, installs packages, OpenVoice + model files, BlackHole via Homebrew
-```
-1. If Homebrew isn't installed, get it from https://brew.sh, then re-run the script (or run `brew install blackhole-2ch`).
-2. **Restart your Mac once** after BlackHole installs (it's an audio driver).
-3. Make the launcher runnable: `chmod +x start.command` (the script already tries this).
+### macOS (Apple Silicon or Intel) - one click
+1. Get the code: `git clone https://github.com/futureimadmin/mimicry.git` (or download the zip and unzip it), then open the folder in Finder.
+2. **Double-click `setup_mac.command`**. If macOS blocks it: right-click → Open → Open (or run `bash setup_mac.command` in Terminal).
+   It installs everything: Apple command-line tools, Homebrew (asks first), Python 3.11, a clean `.venv`, PyTorch (Apple GPU via MPS),
+   OpenVoice, the voice model, the **BlackHole 2ch** virtual microphone, then runs a self-test. Log: `logs/install.log`.
+3. **Restart your Mac once** (BlackHole is an audio driver).
+4. **Double-click `start.command`** → the UI opens in your browser. Click **Allow** when macOS asks for microphone access (Terminal and browser).
+
+Full walkthrough with screenshots-in-words and fixes: see **MAC_QUICKSTART.md**. Terminal equivalent: `bash scripts/install.sh --fresh`.
 
 ### Windows (PowerShell)
 ```powershell

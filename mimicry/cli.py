@@ -39,7 +39,7 @@ def cmd_doctor(a, cfg):
         print("  [ok] openvoice.api imports")
     except Exception as e:  # noqa: BLE001
         print(f"  [--] openvoice.api import failed: {e!r}\n"
-              "       fix: pip install -U \"librosa>=0.10.2\" pypinyin jieba cn2an eng_to_ipa inflect unidecode wavmark soundfile")
+              "       fix: re-run the installer (Mac: setup_mac.command --fresh | Windows: install.ps1 -Fresh)")
     ok = (Path(cfg.openvoice_ckpt) / "converter" / "checkpoint.pth").exists()
     print(f"  [{'ok' if ok else '--'}] OpenVoice checkpoints at {cfg.openvoice_ckpt}"
           + ("" if ok else "  (download: see README \u00a72, 'Model files')"))
