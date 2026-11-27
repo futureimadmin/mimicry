@@ -1,0 +1,9 @@
+{
+  "profile": "default",
+  "input_device": null,
+  "output_device": null,
+  "monitor": false,
+  "hop_ms": 320,
+  "backends": ["openvoice", "pitch"],
+  "fail_mode": "mute"
+}

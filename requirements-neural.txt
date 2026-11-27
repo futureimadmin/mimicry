@@ -1,0 +1,9 @@
+# neural voice backend (OpenVoice v2) - torch is installed separately by the installer
+librosa==0.10.2.post1
+pypinyin
+jieba
+cn2an
+eng_to_ipa
+inflect
+unidecode
+huggingface_hub

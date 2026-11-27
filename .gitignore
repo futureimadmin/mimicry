@@ -1,0 +1,13 @@
+# runtime data - never commit (contains voice recordings & profiles)
+profiles/
+recordings/
+logs/
+config.json
+# environments & vendored models
+.venv/
+third_party/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.wav
+*.pt

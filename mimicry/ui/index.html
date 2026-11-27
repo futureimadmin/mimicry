@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="token" content="__TOKEN__">
+<title>Mimicry – voice conversion</title>
+<style>
+:root{--bg:#0f1115;--card:#171a21;--line:#262b36;--tx:#e8ebf1;--mut:#8b93a5;--acc:#6ea8ff;--ok:#43d19e;--warn:#f5b84b;--bad:#ff6b6b}
+@media (prefers-color-scheme:light){:root{--bg:#f4f6fa;--card:#fff;--line:#dde2ec;--tx:#1b2030;--mut:#667089;--acc:#2f6fed}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+main{max-width:860px;margin:0 auto;padding:24px 16px 80px}
+h1{font-size:22px;margin:0}h1 small{color:var(--mut);font-weight:400;font-size:13px;margin-left:8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0}
+.card h2{font-size:16px;margin:0 0 4px;display:flex;align-items:center;gap:10px}
+.n{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--acc);color:#fff;font-size:13px;font-weight:600}
+.n.done{background:var(--ok)}
+p.sub{color:var(--mut);margin:2px 0 12px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+button,.btn{background:var(--acc);color:#fff;border:0;border-radius:9px;padding:9px 16px;font:inherit;font-weight:600;cursor:pointer}
+button.sec,.btn.sec{background:transparent;color:var(--tx);border:1px solid var(--line)}
+button.rec{background:var(--bad)}button:disabled{opacity:.45;cursor:not-allowed}
+select,input[type=text]{background:var(--bg);color:var(--tx);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit;min-width:220px}
+label{color:var(--mut);font-size:13px;display:block;margin:8px 0 3px}
+canvas{width:100%;height:46px;background:var(--bg);border:1px solid var(--line);border-radius:8px}
+.script{background:var(--bg);border-left:3px solid var(--acc);padding:10px 14px;border-radius:6px;color:var(--mut);margin:10px 0;font-size:14px}
+.chip{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;border:1px solid var(--line);color:var(--mut)}
+.chip.ok{color:var(--ok);border-color:var(--ok)}.chip.warn{color:var(--warn);border-color:var(--warn)}.chip.bad{color:var(--bad);border-color:var(--bad)}
+.msg{margin-top:8px;font-size:13px}.msg.warn{color:var(--warn)}.msg.bad{color:var(--bad)}.msg.ok{color:var(--ok)}
+audio{width:100%;margin-top:8px;height:36px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:12px}
+.stat{background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:8px 10px}.stat b{display:block;font-size:18px}.stat span{color:var(--mut);font-size:12px}
+.bar{height:8px;background:var(--bg);border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-top:4px}.bar i{display:block;height:100%;background:var(--ok);width:0;transition:width .2s}
+#events{font:12px ui-monospace,Menlo,Consolas,monospace;color:var(--mut);max-height:150px;overflow:auto;margin-top:10px;white-space:pre-wrap}
+.callout{background:var(--bg);border:1px dashed var(--acc);border-radius:10px;padding:10px 14px;margin-top:12px}
+details{margin-top:8px;color:var(--mut)}
+</style>
+</head>
+<body>
+<main>
+  <h1>Mimicry <small id="ver"></small></h1>
+  <div class="row" id="status" style="margin-top:8px"></div>
+
+  <section class="card" id="c1"><h2><span class="n">1</span>Record the target voice</h2>
+    <p class="sub">The voice the other person will hear. Only use a voice that is yours or whose owner has agreed. 30–60 seconds of clean speech works best.</p>
+    <div class="script"><b>Read aloud, naturally:</b> “The old lighthouse keeper counted six bright ships crossing the harbour before sunrise. ‘Please bring fresh bread, warm tea and a jar of honey,’ she said, smiling. Thick fog rolled over the quiet water, yet the lamp kept turning, steady and kind. By noon the sky was clear, and children ran along the shore, laughing, chasing gulls, and shouting questions about faraway places. Was it twenty-three or thirty-two? Nobody could quite remember.”</div>
+    <div id="rec-target"></div>
+  </section>
+
+  <section class="card" id="c2"><h2><span class="n">2</span>Record your own voice</h2>
+    <p class="sub">Used so the converter knows what “you” sound like. Read the same text in your normal speaking voice (20–30 s).</p>
+    <div id="rec-source"></div>
+  </section>
+
+  <section class="card" id="c3"><h2><span class="n">3</span>Create the voice profile</h2>
+    <p class="sub">Samples are cleaned automatically (rumble removed, noise reduced, silence trimmed, level normalised).</p>
+    <div class="row"><div><label>Profile name</label><input type="text" id="pname" value="default"></div></div>
+    <label style="display:flex;gap:8px;align-items:flex-start;color:var(--tx);margin-top:12px"><input type="checkbox" id="consent" style="margin-top:4px"><span id="consentText"></span></label>
+    <div class="row" style="margin-top:12px"><button id="enrollBtn" disabled>Create profile</button><span id="enrollMsg" class="msg"></span></div>
+    <div id="profiles" style="margin-top:10px"></div>
+  </section>
+
+  <section class="card" id="c4"><h2><span class="n">4</span>Try it before going live</h2>
+    <p class="sub">Record ~8 seconds of yourself and hear how it comes out. Wear headphones.</p>
+    <div class="row"><label style="margin:0">Profile</label><select id="tryProfile"></select></div>
+    <div id="rec-try" style="margin-top:8px"></div>
+    <div id="tryOut"></div>
+  </section>
+
+  <section class="card" id="c5"><h2><span class="n">5</span>Go live</h2>
+    <p class="sub">Your voice goes in, the target voice comes out of a virtual microphone for any call app.</p>
+    <div id="driverMsg"></div>
+    <div class="row">
+      <div><label>Your real microphone</label><select id="inDev"></select></div>
+      <div><label>Virtual microphone (output)</label><select id="outDev"></select></div>
+      <div><label>Profile</label><select id="liveProfile"></select></div>
+    </div>
+    <label style="display:flex;gap:8px;align-items:center;color:var(--tx)"><input type="checkbox" id="monitor"> Also play the converted voice to my default speaker/headphones (use headphones to avoid echo)</label>
+    <div class="row" style="margin-top:12px"><button id="startBtn">Start</button><button id="stopBtn" class="sec" disabled>Stop</button><span id="liveMsg" class="msg"></span></div>
+    <div id="callout" class="callout" style="display:none"></div>
+    <div class="grid" id="stats" style="display:none"></div>
+    <div id="meters" style="display:none;margin-top:10px">
+      <div style="font-size:12px;color:var(--mut)">Your mic</div><div class="bar"><i id="mIn"></i></div>
+      <div style="font-size:12px;color:var(--mut);margin-top:6px">Converted output</div><div class="bar"><i id="mOut"></i></div>
+    </div>
+    <div id="events"></div>
+  </section>
+</main>
+
+<script>
+const T = document.querySelector('meta[name=token]').content;
+const api = (p, o = {}) => fetch(p, {...o, headers: {'X-Mimicry-Token': T, ...(o.headers || {})}});
+const $ = s => document.querySelector(s);
+const state = {target: null, source: null, tryBlob: null, last: null};
+
+// ---------- WAV encoding (32-bit float, no loss) ----------
+function encodeWav(chunks, sr) {
+  const n = chunks.reduce((a, c) => a + c.length, 0);
+  const buf = new ArrayBuffer(44 + n * 4), v = new DataView(buf);
+  const w = (o, s) => [...s].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
+  w(0, 'RIFF'); v.setUint32(4, 36 + n * 4, true); w(8, 'WAVEfmt ');
+  v.setUint32(16, 16, true); v.setUint16(20, 3, true); v.setUint16(22, 1, true);
+  v.setUint32(24, sr, true); v.setUint32(28, sr * 4, true); v.setUint16(32, 4, true); v.setUint16(34, 32, true);
+  w(36, 'data'); v.setUint32(40, n * 4, true);
+  let o = 44; for (const c of chunks) { new Float32Array(buf, o, c.length).set(c); o += c.length * 4; }
+  return new Blob([buf], {type: 'audio/wav'});
+}
+
+// ---------- Recorder widget ----------
+function recorder(root, kind, {maxSec = 90, onDone}) {
+  root.innerHTML = `
+    <div class="row"><button class="rec">● Record</button><button class="sec up">Upload file…</button>
+      <input type="file" accept="audio/*" hidden><span class="chip tm">0:00</span><span class="chip mic">—</span></div>
+    <canvas width="800" height="46" style="margin-top:10px"></canvas>
+    <audio controls style="display:none"></audio><div class="msg res"></div>
+    <details><summary>Tips for crisp results</summary>Use a headset or a good mic 15–20 cm from your mouth, a quiet room, soft furnishings (no echo), and keep the level out of the red. Don’t use noise-cancelling or auto-gain on the mic.</details>`;
+  const btn = root.querySelector('.rec'), cv = root.querySelector('canvas'), g = cv.getContext('2d');
+  const au = root.querySelector('audio'), res = root.querySelector('.res'), tm = root.querySelector('.tm');
+  const file = root.querySelector('input'), micChip = root.querySelector('.mic');
+  let ctx, stream, proc, chunks, t0, raf, level = 0, peak = 0, recording = false;
+
+  function draw() {
+    g.clearRect(0, 0, cv.width, cv.height);
+    const w = Math.min(1, level * 3) * cv.width;
+    g.fillStyle = peak > .98 ? '#ff6b6b' : level > .5 ? '#f5b84b' : '#43d19e';
+    g.fillRect(0, 8, w, 30);
+    if (recording) { tm.textContent = fmt((performance.now() - t0) / 1000); raf = requestAnimationFrame(draw);
+      if ((performance.now() - t0) / 1000 > maxSec) stop(); }
+  }
+  const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+
+  async function start() {
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({audio: {echoCancellation: false, noiseSuppression: false,
+        autoGainControl: false, channelCount: 1, sampleRate: 48000}});
+    } catch (e) { res.className = 'msg bad'; res.textContent = 'Microphone blocked: ' + e.message +
+      ' — allow microphone access for this page (macOS: System Settings → Privacy & Security → Microphone).'; return; }
+    micChip.textContent = stream.getAudioTracks()[0].label || 'microphone';
+    ctx = new AudioContext({latencyHint: 'interactive'});
+    const src = ctx.createMediaStreamSource(stream);
+    proc = ctx.createScriptProcessor(4096, 1, 1); chunks = []; peak = 0;
+    proc.onaudioprocess = e => {
+      const d = e.inputBuffer.getChannelData(0); chunks.push(new Float32Array(d));
+      let s = 0, p = 0; for (let i = 0; i < d.length; i++) { s += d[i] * d[i]; p = Math.max(p, Math.abs(d[i])); }
+      level = Math.sqrt(s / d.length); peak = Math.max(peak * .9, p);
+    };
+    src.connect(proc); proc.connect(ctx.destination);   // output is silent (we never write to outputBuffer)
+    recording = true; t0 = performance.now(); btn.textContent = '■ Stop'; au.style.display = 'none'; res.textContent = ''; draw();
+  }
+  async function stop() {
+    if (!recording) return; recording = false; cancelAnimationFrame(raf);
+    proc.disconnect(); stream.getTracks().forEach(t => t.stop()); const sr = ctx.sampleRate; await ctx.close();
+    btn.textContent = '● Record'; level = 0; draw();
+    finish(encodeWav(chunks, sr));
+  }
+  async function finish(blob) {
+    au.src = URL.createObjectURL(blob); au.style.display = 'block';
+    onDone && await onDone(blob, res);
+  }
+  btn.onclick = () => recording ? stop() : start();
+  root.querySelector('.up').onclick = () => file.click();
+  file.onchange = () => file.files[0] && finish(file.files[0]);
+}
+
+async function uploadAndReport(kind, blob, res) {
+  res.className = 'msg'; res.textContent = 'Analysing…';
+  const r = await api('/api/upload?kind=' + kind, {method: 'POST', body: blob});
+  const j = await r.json();
+  if (j.error) { res.className = 'msg bad'; res.textContent = j.error; return null; }
+  const m = j.metrics;
+  const bad = j.warnings.length;
+  res.className = 'msg ' + (bad ? 'warn' : 'ok');
+  res.innerHTML = `${bad ? '⚠ ' : '✓ '}${m.duration_s}s · SNR ${m.snr_db} dB · peak ${m.peak_db} dBFS` +
+    j.warnings.map(w => `<br>• ${w}`).join('');
+  return j.id;
+}
+
+recorder($('#rec-target'), 'target', {maxSec: 90, onDone: async (b, res) => { state.target = await uploadAndReport('target', b, res); refresh(true); }});
+recorder($('#rec-source'), 'source', {maxSec: 60, onDone: async (b, res) => { state.source = await uploadAndReport('source', b, res); refresh(true); }});
+recorder($('#rec-try'), 'try', {maxSec: 20, onDone: async (b, res) => {
+  const out = $('#tryOut'); res.textContent = ''; out.innerHTML = '<div class="msg">Converting…</div>';
+  const prof = $('#tryProfile').value;
+  if (!prof) { out.innerHTML = '<div class="msg bad">Create a profile first (step 3).</div>'; return; }
+  const r = await api('/api/convert?profile=' + encodeURIComponent(prof), {method: 'POST', body: b});
+  if (!r.ok) { out.innerHTML = `<div class="msg bad">${(await r.json()).error}</div>`; return; }
+  const info = JSON.parse(r.headers.get('X-Mimicry-Info') || '{}');
+  const url = URL.createObjectURL(await r.blob());
+  const slow = info.rtf >= 0.9;
+  out.innerHTML = `<div class="msg ${slow ? 'warn' : 'ok'}">Result · backend <b>${info.backend}</b> · speed ${info.rtf}× realtime ${slow ? '(too slow for live; use a GPU or a larger chunk)' : '(fast enough for live)'}</div><audio controls autoplay src="${url}"></audio>`;
+}});
+
+$('#enrollBtn').onclick = async () => {
+  const m = $('#enrollMsg'); m.className = 'msg'; m.textContent = 'Cleaning samples and building profile… (can take a minute)';
+  $('#enrollBtn').disabled = true;
+  const r = await api('/api/enroll', {method: 'POST', body: JSON.stringify({target: state.target, source: state.source,
+    name: $('#pname').value.trim(), consent: $('#consent').checked})});
+  const j = await r.json();
+  m.className = 'msg ' + (j.error ? 'bad' : 'ok'); m.innerHTML = j.error || ('✓ Profile created<br>' + j.log.map(l => l.trim()).join('<br>'));
+  refresh(true);
+};
+['#consent', '#pname'].forEach(s => $(s).addEventListener('input', gate));
+function gate() { $('#enrollBtn').disabled = !(state.target && $('#consent').checked && /^[\w-]{1,40}$/.test($('#pname').value)); }
+
+$('#startBtn').onclick = async () => {
+  $('#liveMsg').textContent = '';
+  await api('/api/start', {method: 'POST', body: JSON.stringify({input: $('#inDev').value, output: $('#outDev').value,
+    profile: $('#liveProfile').value, monitor: $('#monitor').checked})});
+  refresh(true);
+};
+$('#stopBtn').onclick = async () => { await api('/api/stop', {method: 'POST'}); refresh(true); };
+
+// ---------- state rendering ----------
+let sig = '';
+function fillSelect(sel, items, pick) {
+  const cur = sel.value; sel.innerHTML = items.map(i => `<option value="${i.v}">${i.t}</option>`).join('');
+  sel.value = items.some(i => i.v == cur) ? cur : (pick ?? items[0]?.v ?? '');
+}
+function render(s) {
+  state.last = s; $('#ver').textContent = `v${s.version} · ${s.platform} ${s.arch}`;
+  $('#consentText').textContent = s.consent_text;
+  const chip = (t, c) => `<span class="chip ${c}">${t}</span>`;
+  $('#status').innerHTML =
+    chip(s.virtual ? 'virtual mic: ' + s.virtual.name : 'virtual mic driver missing', s.virtual ? 'ok' : 'bad') +
+    chip(s.neural.checkpoints && s.neural.torch ? 'neural voice model ready' : 'neural model not installed (fallback: pitch only)', s.neural.checkpoints && s.neural.torch ? 'ok' : 'warn') +
+    chip(s.status, s.status === 'live' ? 'ok' : s.status === 'error' ? 'bad' : '');
+  const dsig = JSON.stringify([s.devices, s.profiles.map(p => p.name)]);
+  if (dsig !== sig) {
+    sig = dsig;
+    fillSelect($('#inDev'), s.devices.inputs.map(d => ({v: d.index, t: `${d.name} (${d.api})`})));
+    fillSelect($('#outDev'), s.devices.outputs.map(d => ({v: d.index, t: `${d.name} (${d.api})`})), s.virtual?.index);
+    const ps = s.profiles.map(p => ({v: p.name, t: p.name + (p.neural_ready ? '' : ' (pitch only)')}));
+    fillSelect($('#tryProfile'), ps); fillSelect($('#liveProfile'), ps);
+  }
+  $('#profiles').innerHTML = s.profiles.map(p => chip(`${p.name} · ${p.neural_ready ? 'neural ready' : 'pitch only'} · ${p.metrics.duration_clean_s ?? '?'}s`, p.neural_ready ? 'ok' : 'warn')).join(' ');
+  $('#c1 .n').classList.toggle('done', !!state.target); $('#c2 .n').classList.toggle('done', !!state.source);
+  $('#c3 .n').classList.toggle('done', s.profiles.length > 0);
+  $('#driverMsg').innerHTML = s.virtual ? '' : `<div class="msg bad" style="margin-bottom:10px">${s.virtual_help}</div>`;
+  if (s.audio_error) $('#driverMsg').innerHTML += `<div class="msg bad">${s.audio_error}</div>`;
+  const live = s.status === 'live', starting = s.status === 'starting';
+  $('#startBtn').disabled = live || starting || !s.profiles.length; $('#stopBtn').disabled = !(live || starting);
+  ['inDev', 'outDev', 'liveProfile', 'monitor'].forEach(i => $('#' + i).disabled = live || starting);
+  $('#liveMsg').className = 'msg ' + (s.status === 'error' ? 'bad' : ''); $('#liveMsg').textContent =
+    s.status === 'error' ? s.error : starting ? 'Loading the voice model…' : '';
+  const co = $('#callout');
+  if (live) {
+    co.style.display = 'block';
+    co.innerHTML = `<b>You’re live.</b> In Teams / Zoom / Meet / any app, set <b>Microphone</b> to <b>${s.plan.call_app_mic}</b>. The other person will hear only the target voice. (If conversion ever fails the output is muted — your real voice is never sent.)`;
+    const st = s.stats || {};
+    $('#stats').style.display = 'grid'; $('#meters').style.display = 'block';
+    const S = (a, b) => `<div class="stat"><b>${a}</b><span>${b}</span></div>`;
+    $('#stats').innerHTML = S(st.backend, st.degraded ? 'backend (degraded)' : 'backend') + S((st.latency_ms ?? '–') + ' ms', 'latency') +
+      S(st.rtf, 'load (must stay <1)') + S(st.underruns, 'glitches') + S(st.hop_ms + ' ms', 'chunk size');
+    const pc = db => Math.max(0, Math.min(100, (db + 60) / 60 * 100)) + '%';
+    $('#mIn').style.width = pc(st.in_db ?? -120); $('#mOut').style.width = pc(st.out_db ?? -120);
+  } else { co.style.display = $('#stats').style.display = $('#meters').style.display = 'none'; }
+  $('#events').textContent = s.events.slice().reverse().map(e => {
+    const {t, event, ...r} = e; return new Date(t * 1000).toLocaleTimeString() + '  ' + event + '  ' + JSON.stringify(r);
+  }).join('\n');
+  gate();
+}
+async function refresh(force) {
+  try { const r = await api('/api/state'); if (r.ok) render(await r.json()); } catch (e) {}
+}
+refresh(); setInterval(refresh, 1000);
+</script>
+</body>
+</html>
