@@ -5,7 +5,7 @@ Works on Apple Silicon (M1–M4) and Intel Macs, macOS 12+. Apple Silicon is muc
 ## 1. Install (once, ~15–30 min, mostly downloads)
 1. Download/clone the repo and open the folder in Finder.
 2. Double-click **`setup_mac.command`** (blocked? right-click → Open → Open).
-3. Answer the prompts: Xcode command-line tools (a pop-up, click Install, then run setup again), Homebrew (type `y`), your Mac password (for the BlackHole driver).
+3. Answer the prompts: Xcode command-line tools (a pop-up – click Install, then run setup again) and your Mac password (for the BlackHole driver). **No Homebrew needed** – Homebrew has largely dropped Intel Macs, so this setup doesn't use it.
 4. When it prints `NEURAL SELFTEST OK … speed=… x realtime` and `DONE`, **restart your Mac**.
 
 The script is safe to re-run. Rebuild from scratch with `bash scripts/install.sh --fresh`. App-only (no big downloads, pitch-only voice): `--skip-neural`.
@@ -27,7 +27,7 @@ Start Mimicry first, then open/refresh the call app's audio settings.
 | Problem | Fix |
 |---|---|
 | Double-click does nothing / "can't be opened" | Right-click → Open, or `cd` into the folder and run `bash setup_mac.command` |
-| `doctor.command` shows `[--] virtual mic driver` | Restart the Mac after the install; or `brew install --cask blackhole-2ch` |
+| `doctor.command` shows `[--] virtual mic driver` | Restart the Mac after the install; or install "BlackHole 2ch" manually from https://existential.audio/blackhole/ |
 | No sound to the other person | Call app mic must be **BlackHole 2ch**; check the Mimicry page says *You're live* and the output meter moves |
 | Page says "Microphone blocked" | System Settings → Privacy & Security → Microphone → allow your browser and Terminal |
 | Choppy / robotic | Close heavy apps; check **load < 1.0** on the page. Intel Macs are slow – expect pitch-only fallback |
@@ -37,4 +37,4 @@ Start Mimicry first, then open/refresh the call app's audio settings.
 Intel Macs: PyTorch no longer ships newer Intel-Mac builds, so the installer uses torch 2.2.2 there. It works but is slow; use `--skip-neural` if it can't keep up.
 
 ## Uninstall
-Delete the folder. To remove the driver: `brew uninstall --cask blackhole-2ch`.
+Delete the folder. To remove the driver, use the BlackHole 2ch uninstaller from https://existential.audio/blackhole/.
