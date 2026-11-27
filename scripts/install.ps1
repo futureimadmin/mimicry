@@ -45,7 +45,7 @@ if (-not $SkipNeural) {
   if ($gpu) { $idx = "https://download.pytorch.org/whl/cu121"; Say "NVIDIA GPU found - installing PyTorch (CUDA, ~2.5 GB, takes a while)" }
   else      { $idx = "https://download.pytorch.org/whl/cpu";   Say "No NVIDIA GPU - installing PyTorch (CPU)" }
   Exec $py @("-m","pip","install","torch","--index-url",$idx)
-  Exec $py @("-m","pip","install","-r","requirements-neural.txt")
+  Exec $py @("-m","pip","install","--only-binary=llvmlite,numba","-r","requirements-neural.txt")
 
   Say "Getting OpenVoice source"
   New-Item -ItemType Directory -Force third_party | Out-Null

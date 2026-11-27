@@ -55,7 +55,7 @@ if [ "$SKIP" = 0 ]; then
   if [ "$OS" = Darwin ] && [ "$ARCH" = x86_64 ]; then TORCH="torch==2.2.2"; else TORCH="torch"; fi   # newest PyTorch has no Intel-Mac build
   say "Installing PyTorch ($TORCH) - Apple Silicon uses the GPU through MPS"
   $PY -m pip install "$TORCH"
-  $PY -m pip install -r requirements-neural.txt
+  $PY -m pip install --only-binary=llvmlite,numba -r requirements-neural.txt
 
   say "Getting OpenVoice source"
   mkdir -p third_party
